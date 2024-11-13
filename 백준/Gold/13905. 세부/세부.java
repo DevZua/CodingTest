@@ -4,21 +4,22 @@ import java.io.IOException;
 import java.util.*;
 
 public class Main {
-    static int N, M, S, E;
+    static final int INF = Integer.MAX_VALUE;
+    static int N, M, s, e;
     static List<Edge>[] edges;
+    static int[] distance;
 
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         StringTokenizer st = new StringTokenizer(br.readLine());
         
-        N = Integer.parseInt(st.nextToken()); // 섬의 개수
-        M = Integer.parseInt(st.nextToken()); // 다리의 개수
+        N = Integer.parseInt(st.nextToken()); // 노드 개수
+        M = Integer.parseInt(st.nextToken()); // 간선 개수
         
         st = new StringTokenizer(br.readLine());
-        S = Integer.parseInt(st.nextToken()); // 출발 섬
-        E = Integer.parseInt(st.nextToken()); // 도착 섬
+        s = Integer.parseInt(st.nextToken()); // 시작 노드
+        e = Integer.parseInt(st.nextToken()); // 도착 노드
         
-        // 인접 리스트 초기화
         edges = new ArrayList[N + 1];
         for (int i = 1; i <= N; i++) {
             edges[i] = new ArrayList<>();
@@ -34,46 +35,35 @@ public class Main {
             edges[h2].add(new Edge(h1, k));
         }
 
-        int left = 1;
-        int right = 1_000_000;
-        int answer = 0;
+        // 최단 거리 배열 초기화
+        distance = new int[N + 1];
+        Arrays.fill(distance, 0);
 
-        // 이분 탐색
-        while (left <= right) {
-            int mid = (left + right) / 2;
-            if (bfs(mid)) {
-                answer = mid;
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
-        }
+        // 우선순위 큐 초기화 (최대 가중치를 최대화하는 경로를 찾기 위해 최대 힙 사용)
+        PriorityQueue<Edge> pq = new PriorityQueue<>(Comparator.comparingInt(o -> -o.weight));
+        pq.offer(new Edge(s, INF));
+        distance[s] = INF;
 
-        System.out.println(answer);
-    }
+        // 다익스트라 알고리즘 변형
+        while (!pq.isEmpty()) {
+            Edge current = pq.poll();
+            int dist = current.weight;
+            int now = current.to;
 
-    // BFS를 이용한 탐색 함수
-    static boolean bfs(int weightLimit) {
-        boolean[] visit = new boolean[N + 1];
-        Queue<Integer> queue = new LinkedList<>();
-        
-        queue.add(S);
-        visit[S] = true;
-
-        while (!queue.isEmpty()) {
-            int now = queue.poll();
-            if (now == E) {
-                return true;
+            if (distance[now] > dist) {
+                continue;
             }
 
             for (Edge edge : edges[now]) {
-                if (!visit[edge.to] && edge.weight >= weightLimit) {
-                    queue.add(edge.to);
-                    visit[edge.to] = true;
+                int cost = Math.min(dist, edge.weight);
+                if (cost > distance[edge.to]) {
+                    distance[edge.to] = cost;
+                    pq.offer(new Edge(edge.to, cost));
                 }
             }
         }
-        return false;
+
+        System.out.println(distance[e]);
     }
 
     // 간선 클래스 정의
