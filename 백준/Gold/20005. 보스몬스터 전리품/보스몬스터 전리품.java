@@ -1,105 +1,110 @@
 import java.util.*;
+import java.io.*;
 
 public class Main {
-
     static int m, n, p;
-    static Map<Character, Player> playerMap = new HashMap<>();
     static char[][] board;
     static int[] dx = {0, 1, 0, -1};
     static int[] dy = {-1, 0, 1, 0};
-
-    public static void main(String[] args) {
-        Scanner scan = new Scanner(System.in);
-
-        // 지도 크기와 플레이어 수 입력
-        m = scan.nextInt();
-        n = scan.nextInt();
-        p = scan.nextInt();
-
+    
+    public static void main(String[] args) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        StringTokenizer st = new StringTokenizer(br.readLine());
+        
+        m = Integer.parseInt(st.nextToken());
+        n = Integer.parseInt(st.nextToken());
+        p = Integer.parseInt(st.nextToken());
+        
         board = new char[m][n];
+        List<Player> players = new ArrayList<>();
         Queue<Node> queue = new LinkedList<>();
-
-        // 지도 입력 및 초기 플레이어 위치 큐에 삽입
+        
+        // 보드 입력 및 플레이어 위치 초기화
         for (int i = 0; i < m; i++) {
-            String line = scan.next();
+            String line = br.readLine();
             for (int j = 0; j < n; j++) {
                 board[i][j] = line.charAt(j);
-                if (Character.isLowerCase(board[i][j])) { // 플레이어 위치
+                if (Character.isLowerCase(board[i][j])) {
                     queue.offer(new Node(board[i][j], i, j));
                 }
             }
         }
-
+        
         // 플레이어 정보 입력
         for (int i = 0; i < p; i++) {
-            char id = scan.next().charAt(0);
-            int dps = scan.nextInt();
-            playerMap.put(id, new Player(dps));
+            st = new StringTokenizer(br.readLine());
+            char id = st.nextToken().charAt(0);
+            int dps = Integer.parseInt(st.nextToken());
+            players.add(new Player(id, dps));
         }
-
+        
         // 보스 체력 입력
-        int bossHp = scan.nextInt();
-
+        int bossHp = Integer.parseInt(br.readLine());
+        
         // 결과 출력
-        System.out.println(bfs(queue, bossHp));
+        System.out.println(bfs(queue, players, bossHp));
     }
-
-    static int bfs(Queue<Node> queue, int bossHp) {
-        boolean[][][] visited = new boolean[m][n][26]; // 플레이어별 방문 체크
-        Set<Character> attackers = new HashSet<>();   // 보스를 공격할 수 있는 플레이어 집합
-
-        while (bossHp > 0) {
+    
+    static int bfs(Queue<Node> queue, List<Player> players, int bossHp) {
+        boolean[][][] visited = new boolean[m][n][26];
+        Set<Character> attackers = new HashSet<>();
+        Map<Character, Player> playerMap = new HashMap<>();
+        
+        // 플레이어 맵 초기화
+        for (Player player : players) {
+            playerMap.put(player.id, player);
+        }
+        
+        while (bossHp > 0 && !queue.isEmpty()) {
             int size = queue.size();
             for (int i = 0; i < size; i++) {
                 Node current = queue.poll();
                 char playerId = current.id;
-
-                // 보스를 이미 공격 중인 플레이어는 건너뜀
+                
                 if (attackers.contains(playerId)) continue;
-
-                // 네 방향으로 탐색
+                
                 for (int dir = 0; dir < 4; dir++) {
                     int nx = current.x + dx[dir];
                     int ny = current.y + dy[dir];
-
-                    if (nx < 0 || ny < 0 || nx >= m || ny >= n) continue; // 범위 초과
-                    if (visited[nx][ny][playerId - 'a'] || board[nx][ny] == 'X') continue; // 이미 방문 또는 장애물
-
+                    
+                    if (nx < 0 || ny < 0 || nx >= m || ny >= n) continue;
+                    if (visited[nx][ny][playerId - 'a'] || board[nx][ny] == 'X') continue;
+                    
                     visited[nx][ny][playerId - 'a'] = true;
-
-                    if (board[nx][ny] == 'B') { // 보스 위치 도달
+                    
+                    if (board[nx][ny] == 'B') {
                         attackers.add(playerId);
                     } else {
-                        queue.offer(new Node(playerId, nx, ny)); // 다음 위치 탐색
+                        queue.offer(new Node(playerId, nx, ny));
                     }
                 }
             }
-
-            // 모든 공격 중인 플레이어로부터 보스 공격
+            
+            // 공격 로직 최적화
             for (char attacker : attackers) {
                 bossHp -= playerMap.get(attacker).dps;
-                if (bossHp <= 0) break; // 보스 체력이 0 이하가 되면 종료
+                if (bossHp <= 0) break;
             }
         }
-
+        
         return attackers.size();
     }
-
+    
     static class Node {
         char id;
         int x, y;
-
         Node(char id, int x, int y) {
             this.id = id;
             this.x = x;
             this.y = y;
         }
     }
-
+    
     static class Player {
+        char id;
         int dps;
-
-        Player(int dps) {
+        Player(char id, int dps) {
+            this.id = id;
             this.dps = dps;
         }
     }
